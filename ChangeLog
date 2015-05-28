@@ -1,11 +1,8 @@
 CHANGES
 =======
 
-Unreleased
+0.0.7
 ----------
 
 - New feature to link from endpoints to corresponding view source code.
-
-1.0.0
------
-Initial creation
+- Fix missing backslash for route patterns with regexes
