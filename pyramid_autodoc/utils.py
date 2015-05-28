@@ -243,7 +243,7 @@ def get_route_data(route, registry):
 
         final_routes.append((
             route.name,
-            pattern,
+            pattern.replace('\\', '\\\\'),
             view_module,
             request_methods,
             view_docs,
