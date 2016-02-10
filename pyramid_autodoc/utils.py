@@ -204,13 +204,13 @@ def get_route_data(route, registry):
                     view_callable = getattr(view['callable'], view['attr'])
                     view_module, view_docs = _get_view_module(view_callable)
                     view_source = _get_view_source(view_callable)
-
-                if request_method is not None:
+                else:
                     view_callable = view['callable']
 
                     view_module, view_docs = _get_view_module(view_callable)
                     view_source = _get_view_source(view_callable)
 
+                if request_method is not None:
                     if view_module not in view_request_methods:
                         view_request_methods[view_module] = []
                         view_request_methods_order.append((view_module,
