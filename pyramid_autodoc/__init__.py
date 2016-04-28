@@ -6,16 +6,17 @@ import sys
 import docutils
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives
-from pyramid.paster import bootstrap
 from pyramid.compat import PY3
 from pyramid.compat import string_types
 from pyramid.config import Configurator
+from pyramid.scripting import prepare
 from pyramid_autodoc.utils import get_route_data, ANY_KEY
 from sphinxcontrib.autohttp.common import http_directive
 from sphinxcontrib import httpdomain
 from docutils.statemachine import ViewList
 from sphinx import addnodes
 from sphinx.util.nodes import nested_parse_with_titles
+from montague import load_app
 import re
 
 
@@ -55,9 +56,11 @@ class RouteDirective(Directive):
 
         return False
 
-    def get_routes(self, ini_file, path_blacklist=None, path_whitelist=None,
+    def get_routes(self, config_file, path_blacklist=None, path_whitelist=None,
                    module_blacklist=None, module_whitelist=None):
-        env = bootstrap(ini_file)
+
+        app = load_app(config_file)
+        env = prepare()
         registry = env['registry']
         config = Configurator(registry=registry)
         mapper = config.get_routes_mapper()
