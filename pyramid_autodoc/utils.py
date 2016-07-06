@@ -9,6 +9,7 @@ from pyramid.interfaces import (
 from pyramid.config import not_
 from pyramid.compat import string_types
 from zope.interface import Interface
+from pyramid.view import _find_views
 
 
 ANY_KEY = '*'
@@ -102,7 +103,6 @@ def _get_view_source(view_callable):
         'source_lines': source_lines,
     }
 
-
 def _get_view_module(view_callable):
     if view_callable is None:
         return UNKNOWN_KEY, ''
@@ -115,15 +115,6 @@ def _get_view_module(view_callable):
 
         if isinstance(original_view, static_view):
             raise Exception()
-
-            # skip static views
-            if original_view.package_name is not None:
-                return '%s:%s' % (
-                    original_view.package_name,
-                    original_view.docroot
-                ), ''
-            else:
-                return original_view.docroot
         else:
             view_name = view_callable.__name__
     else:
@@ -168,12 +159,11 @@ def get_route_data(route, registry):
             (route.name, _get_pattern(route), UNKNOWN_KEY, ANY_KEY)
         ]
 
-    view_callable = registry.adapters.lookup(
-        (IViewClassifier, request_iface, Interface),
-        IView,
-        name='',
-        default=None
-    )
+    view_callables = _find_views(registry, request_iface, Interface, '')
+    if view_callables:
+        view_callable = view_callables[0]
+    else:
+        view_callable = None
 
     try:
         view_module, view_docs = _get_view_module(view_callable)
@@ -181,17 +171,18 @@ def get_route_data(route, registry):
         return []
 
     view_source = _get_view_source(view_callable)
-
     # Introspectables can be turned off, so there could be a chance
     # that we have no `route_intr` but we do have a route + callable
     if route_intr is None:
         view_request_methods[view_module] = []
-        view_request_methods_order.append((view_module, view_docs))
+        view_request_methods_order.append((view_module,
+                                            view_docs))
     else:
         if route_intr.get('static', False) is True:
             return [
                 (route.name, route_intr['external_url'], UNKNOWN_KEY, ANY_KEY)
             ]
+
 
         route_request_methods = route_intr['request_methods']
         view_intr = registry.introspector.related(route_intr)
@@ -200,34 +191,28 @@ def get_route_data(route, registry):
             for view in view_intr:
                 request_method = view.get('request_methods')
 
-                if view.get('attr') is not None:
-                    view_callable = getattr(view['callable'], view['attr'])
-                    view_module, view_docs = _get_view_module(view_callable)
-                    view_source = _get_view_source(view_callable)
-                else:
-                    view_callable = view['callable']
-
-                    view_module, view_docs = _get_view_module(view_callable)
-                    view_source = _get_view_source(view_callable)
-
                 if request_method is not None:
+                    if view.get('attr') is not None:
+                        view_callable = getattr(view['callable'], view['attr'])
+                    else:
+                        view_callable = view['callable']
+
+                    view_module, view_docs = _get_view_module(view_callable)
+                    view_source = _get_view_source(view_callable)
+
                     if view_module not in view_request_methods:
                         view_request_methods[view_module] = []
-                        view_request_methods_order.append((view_module,
-                                                           view_docs))
+                        view_request_methods_order.append((view_module, view_docs))
 
                     if isinstance(request_method, string_types):
                         request_method = (request_method,)
                     elif isinstance(request_method, not_):
                         request_method = ('!%s' % request_method.value,)
-
                     view_request_methods[view_module].extend(request_method)
                 else:
                     if view_module not in view_request_methods:
                         view_request_methods[view_module] = []
-                        view_request_methods_order.append((view_module,
-                                                           view_docs))
-
+                        view_request_methods_order.append((view_module, view_docs))
         else:
             view_request_methods[view_module] = []
             view_request_methods_order.append((view_module, view_docs))
