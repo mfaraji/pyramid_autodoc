@@ -332,7 +332,6 @@ def rst2node(doc_name, data):
 
 def setup(app):
     """Hook the directives when Sphinx ask for it."""
-    if 'http' not in app.domains:
-        httpdomain.setup(app)
+    app.setup_extension('sphinxcontrib.httpdomain')
 
     app.add_directive('autopyramid', RouteDirective)
